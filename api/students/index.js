@@ -1,10 +1,11 @@
 'use strict';
-
+var contactEvent = require("../../events.js")
 var _ = require('lodash');
 var Student = require('./student.model');
 
 // Get list of student
 exports.index = function(req, res) {
+  console.log (1)
   // Connect to the db
   Student.find(function (err, students) {
     if(err) {
@@ -16,11 +17,24 @@ exports.index = function(req, res) {
 
 // Creates a new student in datastore.
 exports.create = function(req, res) {
-  Student.create(req.body, function(err, student) {
+  Student.findOne({'email': req.body.email},function(err, result){ //checking if email is already in the system
     if(err) {
-      return handleError(res, err);
+      return handleError(result, err);
     }
-    return res.json(201, student);
+    if (!result){
+      Student.create(req.body, function(err, student) {
+        if(err) {
+          return handleError(result, err);
+        }
+        contactEvent.publish('create_student_event', student);
+        return result.json(201, student);
+      });
+    }
+    else 
+    {
+      //res.json({'status': 401,'message': 'Student email is already in use'});
+      res.status(401).send('Student email is already in use');
+    }
   });
 };
 

@@ -8,8 +8,10 @@
     "express": "^4.15.2",
     "loadash": "0.0.1",
     "lodash": "^4.17.4",
+    "mailgun-js": "^0.10.1",
     "mongodb": "^2.2.24",
     "mongoose": "^4.9.7",
+    "pubnub": "^4.8.0",
     "shortid": "^2.2.6"
   },
   "devDependencies": {
@@ -24,7 +26,7 @@
     "supertest": "^3.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha \"api/**/test/*.js\""
   },
   "repository": {
     "type": "git",
