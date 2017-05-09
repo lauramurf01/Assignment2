@@ -1,48 +1,37 @@
+'use strict';
+
+// Set default node environment to development
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+
+var mongoose = require('mongoose');
+var config = require('./config/');
 var express = require('express');
 var bodyParser = require('body-parser');
-var fs = require('fs');
-var https = require("https");
-
-var key = fs.readFileSync('./ssl/my-server-key.pem');
-var cert = fs.readFileSync('./ssl/my-server-crt.pem');
-var ca = fs.readFileSync('./ssl/my-ca-crt.pem');
-
-var options ={
-
-	key: key,
-	cert: cert,
-	ca:ca
-};
-
+//create routing object
+var student = require('./api/students/index');
+// var config = require('./config');
 
 //create an express app
 var app = express();
 
-var config = require('./config');
+// Connect to database
+mongoose.connect(config.mongo.uri, config.mongo.options);
 
 //configure the express app to parse JSON-formatted body
 app.use(bodyParser.json());
 
-//add route for the root
-app.get('/',function (request, response) {
-  response.writeHead(200, {"Content-Type": "text/plain"});
-  response.end("We're up and running!!!");
-});
-
-//create routing object
-var contact = require('./api/students/index');
+//add static path.
+app.use(express.static(config.root));
+console.log(config.root);
 
 //Add routes for contacts api
-app.get('/api/students',contact.index);
-app.post('/api/students',contact.create);
-app.put('/api/students/:id',contact.update);
-app.delete('/api/students/:id',contact.delete);
-
+app.get('/api/students',student.index);
+app.post('/api/students',student.create);
+app.put('/api/students/:id',student.update);
+app.delete('/api/students/:id',student.delete);
 
 // Listen on port 8000, IP defaults to 127.0.0.1
-var httpsServer = https.Server(options, app)
-  .listen(8000, function () {
-    console.log("Express server running at " + httpsServer.address().port);
+app.listen(config.port)
 
-  });
-
+// Put a friendly message on the terminal
+console.log("Server running at http://127.0.0.1:8000/");

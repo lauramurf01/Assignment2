@@ -1,74 +1,76 @@
-var MongoClient = require('mongodb').MongoClient;
-var ObjectId = require('mongodb').ObjectID;
-var assert = require('assert');
-var config = require('../../config');
+'use strict';
 
-var mongoDb;
+var _ = require('lodash');
+var Student = require('./student.model');
 
-var url = config.mongodbUri;
-
-MongoClient.connect(url, function(err, db) {
-  assert.equal(null, err);
-  config.logStars("Connected correctly to server.");
-  mongoDb = db;
-});
-
-// Get list of students
+// Get list of student
 exports.index = function(req, res) {
-   // Connect to the db
-    if (mongoDb){
-      var collection = mongoDb.collection('students');
-      collection.find().toArray(function(err, items) {
-          res.send(items);
-      });
+  // Connect to the db
+  Student.find(function (err, students) {
+    if(err) {
+      return handleError(res, err);
     }
-    else
-    {
-        config.logStars('No database object!');
-        res.status(404).send({});
-    }
-};
-// Creates a new student in datasbase.
-exports.create = function(req, res) {
-  var student = req.body;
-    if (mongoDb){
-      var collection = mongoDb.collection('students');
-      collection.insertOne(student, function(err, result) {
-            assert.equal(err,null);
-            config.logStars('Inserted: ' + JSON.stringify(result));
-            res.status(200).send(result);
-            
-        });
-    }
-  else
-  {
-    config.logStars('No database object!');
-  }
-   
+    return res.json(200, students);
+  });
 };
 
-// Update an existing student in database.
-exports.update = function(req, res) {
-  var id = req.params.id;
-  var student = req.body;
-  config.logStars('Updating student: ' + id);
-  var collection = mongoDb.collection('students');
-  collection.updateOne({'_id':ObjectId(id)}, student, function(err, result) {
-           assert.equal(err,null);
-              console.log('' + result + ' document(s) updated');
-              res.status(200).send(result);
+// Creates a new student in datastore.
+exports.create = function(req, res) {
+  Student.create(req.body, function(err, student) {
+    if(err) {
+      return handleError(res, err);
+    }
+    return res.json(201, student);
   });
-   
 };
-// delete an existing student in database.
-exports.delete = function(req, res) {
-    var id = req.params.id;
-  config.logStars('Deleting student: ' + id);
-  var collection = mongoDb.collection('students');
-  collection.deleteOne({'_id':ObjectId(id)}, function(err, result) {
-           assert.equal(err,null);
-          console.log('' + result + ' document(s) deleted');
-          res.status(200).send(result);
+
+// Updates an existing student in the DB.
+exports.update = function(req, res) {
+  if(req.body._id) {
+    delete req.body._id;
+  }
+  Student.findById(req.params.id, function(err, student) {
+    if(err) {
+      return handleError(res, err);
+    }
+    if(!student) {
+      return res.send(404);
+    }
+    var updated = _.merge(student, req.body);
+    updated.save(function(err) {
+      if (err) { return handleError(res, err); }
+      return res.json(200, student);
+    });
   });
-   
+};
+
+// delete an existing student in datastore.
+exports.delete = function(req, res) {
+    Student.findById(req.params.id, function (err, student) {
+    if(err) { return handleError(res, err); }
+    if(!student) { return res.send(404); }
+    student.remove(function(err) {
+      if(err) { return handleError(res, err); }
+      return res.send(204);
+    });
+  });
+};
+
+exports.getstudent = function(req, res) {
+  if(req.body._id) {
+    delete req.body._id;
+  }
+  Student.findById(req.params.id, function(err, student) {
+    if(err) {
+      return handleError(res, err);
+    }
+    if(!student) {
+      return res.send(404);
+    }
+    return res.json(200, students);
+  });
+};
+
+function handleError(res, err) {
+  return res.send(500, err);
 };
